@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TournamentStatus {
+  draft
+  in_progress
+  finished
+}
+
+enum ParticipantStatus {
+  registered
+  seeded
+  active
+  eliminated
+  finished
+}
+
+enum TribeCode {
+  comet
+  satellite
+  star
+}
+
+enum BracketType {
+  swiss
+}
+
+enum MatchStatus {
+  pending
+  finished
+  bye
+}
+
+enum RoundStatus {
+  pending
+  in_progress
+  finished
+}
+
+enum ScheduleSource {
+  manual
+  auto
+}
+
+enum AuditEntityType {
+  tournament
+  match
+  participant
+}
+
+enum AuditAction {
+  tournament_seed
+  tournament_reseed
+  match_result_create
+  match_result_update
+  match_result_reset
+  match_schedule_manual
+  match_schedule_auto
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Tournament {
+  id                String           @id @default(uuid())
+  title             String
+  description       String
+  status            TournamentStatus @default(draft)
+  isActive          Boolean          @default(false)
+  format            String           @default("swiss")
+  roundsCount       Int              @default(4)
+  currentRound      Int              @default(0)
+  setsToWin         Int              @default(2)
+  tvIntervalSec     Int              @default(10)
+  isTelegramEnabled Boolean          @default(false)
+  date              DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  startedAt         DateTime?
+  finishedAt        DateTime?
+
+  participants Participant[]
+  rounds       Round[]
+  matches      Match[]
+  auditRecords AuditRecord[]
+}
+
+model Round {
+  id           String      @id @default(uuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  number       Int
+  status       RoundStatus @default(pending)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  startedAt    DateTime?
+  completedAt  DateTime?
+  scheduledAt  DateTime?
+  matches      Match[]
+
+  @@unique([tournamentId, number])
+  @@index([tournamentId, number])
+}
+
+model Participant {
+  id                String            @id @default(uuid())
+  tournamentId      String
+  tournament        Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  nickname          String
+  tribe             TribeCode
+  telegramContact   String?
+  registrationOrder Int
+  seedNumber        Int?
+  status            ParticipantStatus @default(registered)
+  finalPlace        Int?
+  finalScore        Int?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  matchesAsA Match[] @relation("MatchParticipantA")
+  matchesAsB Match[] @relation("MatchParticipantB")
+  wonMatches Match[] @relation("MatchWinner")
+  lostMatches Match[] @relation("MatchLoser")
+
+  @@unique([tournamentId, nickname])
+  @@unique([tournamentId, seedNumber])
+  @@index([tournamentId])
+}
+
+model Match {
+  id             String       @id @default(uuid())
+  tournamentId   String
+  tournament     Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  roundId        String
+  round          Round        @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  bracketType    BracketType
+  roundNumber    Int
+  matchNumber    Int
+  sequence       Int
+  participantAId String?
+  participantBId String?
+  participantA   Participant? @relation("MatchParticipantA", fields: [participantAId], references: [id], onDelete: SetNull)
+  participantB   Participant? @relation("MatchParticipantB", fields: [participantBId], references: [id], onDelete: SetNull)
+  winnerId       String?
+  loserId        String?
+  winner         Participant? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  loser          Participant? @relation("MatchLoser", fields: [loserId], references: [id], onDelete: SetNull)
+  scoreA         Int?
+  scoreB         Int?
+  status         MatchStatus
+  scheduledAt    DateTime?
+  scheduleSource ScheduleSource?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tournamentId, bracketType, roundNumber, matchNumber])
+  @@unique([tournamentId, bracketType, roundNumber, matchNumber])
+}
+
+model AuditRecord {
+  id           String          @id @default(uuid())
+  tournamentId String
+  tournament   Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  adminId      String?
+  action       AuditAction
+  entityType   AuditEntityType
+  entityId     String?
+  beforeJson   Json?
+  afterJson    Json?
+  metadataJson Json?
+  createdAt    DateTime        @default(now())
+
+  @@index([tournamentId, createdAt(sort: Desc)])
+}
