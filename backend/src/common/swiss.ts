@@ -5,5 +5,5 @@ export function getRecommendedSwissRounds(participantCount: number): number {
 }
 
 export function isStartParticipantCountValid(participantCount: number): boolean {
-  return participantCount >= 10 && participantCount <= 30;
+  return participantCount >= 10;
 }

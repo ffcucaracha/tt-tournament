@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { MatchView } from "../api/types";
 import { formatIsoDateTimeInOmsk } from "../shared/datetime";
 import { tribeIconMap } from "../shared/presentation";
@@ -7,9 +8,34 @@ import { StatusBadge } from "./StatusBadge";
 interface MatchCardProps {
   match: MatchView;
   compact?: boolean;
+  participantLinks?: boolean;
 }
 
-export function MatchCard({ match, compact = false }: MatchCardProps): JSX.Element {
+function PlayerName({
+  participant,
+  fallback,
+  participantLinks
+}: {
+  participant: MatchView["participantA"];
+  fallback: string;
+  participantLinks: boolean;
+}): JSX.Element {
+  if (!participant) {
+    return <span>{fallback}</span>;
+  }
+
+  if (!participantLinks) {
+    return <span>{participant.nickname}</span>;
+  }
+
+  return (
+    <Link className="text-accent hover:text-accent/80" to={`/participants/${participant.id}`}>
+      {participant.nickname}
+    </Link>
+  );
+}
+
+export function MatchCard({ match, compact = false, participantLinks = true }: MatchCardProps): JSX.Element {
   const playerA = match.participantA?.nickname ?? "TBD";
   const playerB = match.participantB?.nickname ?? "TBD";
   const iconA = match.participantA ? tribeIconMap[match.participantA.tribe] : "•";
@@ -23,15 +49,15 @@ export function MatchCard({ match, compact = false }: MatchCardProps): JSX.Eleme
         <StatusBadge status={match.status} />
       </div>
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <p className="text-sm text-textMain">
-            {iconA} {playerA}
+            {iconA} <PlayerName fallback={playerA} participant={match.participantA} participantLinks={participantLinks} />
           </p>
           <p className="text-sm text-textMain">
-            {iconB} {playerB}
+            {iconB} <PlayerName fallback={playerB} participant={match.participantB} participantLinks={participantLinks} />
           </p>
         </div>
-        <ScoreBadge scoreA={match.scoreA} scoreB={match.scoreB} />
+        <ScoreBadge scoreA={match.scoreA} scoreB={match.scoreB} resultType={match.resultType} />
       </div>
       {!compact ? (
         <p className="mt-2 text-xs text-textMuted">

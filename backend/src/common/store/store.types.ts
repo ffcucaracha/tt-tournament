@@ -1,4 +1,5 @@
 import { BracketType, MatchStatus, ParticipantStatus, TournamentStatus, TribeCode } from "@prisma/client";
+import { MatchResultType } from "../types";
 
 export interface CreateTournamentInput {
   id?: string;
@@ -27,12 +28,14 @@ export interface UpdateTournamentInput {
 
 export interface CreateParticipantInput {
   nickname: string;
+  fullName?: string | null;
   tribe: TribeCode;
   telegramContact?: string | null;
 }
 
 export interface UpdateParticipantInput {
   nickname?: string;
+  fullName?: string | null;
   tribe?: TribeCode;
   telegramContact?: string | null;
   status?: ParticipantStatus;
@@ -44,9 +47,10 @@ export interface UpdateMatchInput {
 }
 
 export interface SetResultInput {
-  winnerId: string;
-  scoreA: number;
-  scoreB: number;
+  resultType?: MatchResultType;
+  winnerId?: string | null;
+  scoreA?: number;
+  scoreB?: number;
 }
 
 export interface GeneratedMatch {

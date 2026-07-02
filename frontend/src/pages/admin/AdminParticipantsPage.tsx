@@ -25,11 +25,12 @@ export function AdminParticipantsPage(): JSX.Element {
   const seedMutation = useSeedTournament();
   const tournament = tournamentsQuery.data?.find((item) => item.isActive) ?? tournamentsQuery.data?.[0];
   const participantsCount = participantsQuery.data?.length ?? 0;
-  const canSeed = tournament?.status === "draft" && participantsCount >= 10 && participantsCount <= 30;
+  const canSeed = tournament?.status === "draft" && participantsCount >= 10;
   const canManageParticipants = tournament?.status === "draft";
   const recommendedRounds = participantsCount <= 15 ? 5 : participantsCount <= 23 ? 5 : 6;
 
   const [nickname, setNickname] = useState("");
+  const [fullName, setFullName] = useState("");
   const [tribe, setTribe] = useState<"comet" | "satellite" | "star">("comet");
   const [contact, setContact] = useState("");
   const [csvFileName, setCsvFileName] = useState("");
@@ -44,10 +45,12 @@ export function AdminParticipantsPage(): JSX.Element {
     }
     addMutation.mutate({
       nickname: nickname.trim(),
+      fullName: fullName.trim() || null,
       tribe,
       telegramContact: contact.trim() || null
     });
     setNickname("");
+    setFullName("");
     setContact("");
   };
 
@@ -126,7 +129,7 @@ export function AdminParticipantsPage(): JSX.Element {
     <div className="space-y-4">
       <PageTitle
         title="Админка участников"
-        subtitle={`Импорт/добавление участников и запуск посева (текущий состав: ${participantsCount}, допустимо для старта: 10–30)`}
+        subtitle={`Импорт/добавление участников и запуск посева (текущий состав: ${participantsCount}, минимум для старта: 10)`}
         rightSlot={
           (canSeed && <button
             className="rounded-md border border-accent/60 bg-accent/10 px-3 py-1.5 text-sm text-accent disabled:opacity-60"
@@ -143,12 +146,19 @@ export function AdminParticipantsPage(): JSX.Element {
         Рекомендованное число туров для текущего состава: {recommendedRounds}. Фактическое значение задается в настройках турнира до старта.
       </p>
 
-      {canManageParticipants && <form className="grid gap-3 rounded-lg border border-white/10 bg-panel/90 p-4 md:grid-cols-4" onSubmit={onSubmit}>
+      {canManageParticipants && <form className="grid gap-3 rounded-lg border border-white/10 bg-panel/90 p-4 md:grid-cols-5" onSubmit={onSubmit}>
         <input
           className="rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
           placeholder="Ник"
           value={nickname}
           onChange={(event) => setNickname(event.target.value)}
+          disabled={addMutation.isPending}
+        />
+        <input
+          className="rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
+          placeholder="Имя"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
           disabled={addMutation.isPending}
         />
         <select

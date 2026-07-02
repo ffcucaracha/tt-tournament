@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { IsIn, IsInt, IsOptional, IsString, Min } from "class-validator";
 import { AdminAuthGuard } from "../auth/admin-auth.guard";
-import { MatchStatus, MatchView } from "../common/types";
+import { MatchResultType, MatchStatus, MatchView } from "../common/types";
 import { MatchesService } from "./matches.service";
 
 class PatchMatchDto {
@@ -20,16 +20,23 @@ class ScheduleMatchDto {
 }
 
 class SetResultDto {
+  @IsOptional()
+  @IsIn(["played", "technical_loss_a", "technical_loss_b", "technical_loss_both"])
+  resultType?: MatchResultType;
+
+  @IsOptional()
   @IsString()
-  winnerId!: string;
+  winnerId?: string | null;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  scoreA!: number;
+  scoreA?: number;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  scoreB!: number;
+  scoreB?: number;
 }
 
 @Controller("admin")

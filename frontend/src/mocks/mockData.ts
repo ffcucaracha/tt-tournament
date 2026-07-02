@@ -45,6 +45,7 @@ export const mockParticipants: Participant[] = [
   id: row[0],
   tournamentId: MOCK_TOURNAMENT_ID,
   nickname: row[1],
+  fullName: `${row[1][0].toUpperCase()}${row[1].slice(1)}`,
   tribe: row[2] as "comet" | "satellite" | "star",
   telegramContact: `@${row[1]}`,
   registrationOrder: index + 1,
@@ -62,12 +63,12 @@ function player(id: string): MatchView["participantA"] {
 }
 
 export const mockMatches: MatchView[] = [
-  { id: "m1", bracketType: "swiss", roundNumber: 1, matchNumber: 1, participantA: player("p1"), participantB: player("p2"), winnerId: "p1", scoreA: 2, scoreB: 0, status: "finished", scheduledAt: "2026-05-15T10:00:00.000Z", scheduleSource: "manual" },
-  { id: "m2", bracketType: "swiss", roundNumber: 1, matchNumber: 2, participantA: player("p3"), participantB: player("p4"), winnerId: "p4", scoreA: 1, scoreB: 2, status: "finished", scheduledAt: "2026-05-15T12:00:00.000Z", scheduleSource: "manual" },
-  { id: "m3", bracketType: "swiss", roundNumber: 1, matchNumber: 3, participantA: player("p5"), participantB: player("p6"), winnerId: "p5", scoreA: 2, scoreB: 1, status: "finished", scheduledAt: "2026-05-15T13:00:00.000Z", scheduleSource: "manual" },
-  { id: "m4", bracketType: "swiss", roundNumber: 1, matchNumber: 4, participantA: player("p7"), participantB: null, winnerId: "p7", scoreA: 1, scoreB: 0, status: "bye", scheduledAt: null, scheduleSource: null },
-  { id: "m5", bracketType: "swiss", roundNumber: 2, matchNumber: 1, participantA: player("p1"), participantB: player("p4"), winnerId: "p1", scoreA: 2, scoreB: 1, status: "finished", scheduledAt: "2026-05-16T10:00:00.000Z", scheduleSource: "manual" },
-  { id: "m6", bracketType: "swiss", roundNumber: 2, matchNumber: 2, participantA: player("p5"), participantB: player("p7"), winnerId: "p5", scoreA: 2, scoreB: 0, status: "finished", scheduledAt: "2026-05-16T12:00:00.000Z", scheduleSource: "manual" }
+  { id: "m1", bracketType: "swiss", roundNumber: 1, matchNumber: 1, participantA: player("p1"), participantB: player("p2"), winnerId: "p1", scoreA: 2, scoreB: 0, status: "finished", resultType: "played", scheduledAt: "2026-05-15T10:00:00.000Z", scheduleSource: "manual" },
+  { id: "m2", bracketType: "swiss", roundNumber: 1, matchNumber: 2, participantA: player("p3"), participantB: player("p4"), winnerId: "p4", scoreA: 1, scoreB: 2, status: "finished", resultType: "played", scheduledAt: "2026-05-15T12:00:00.000Z", scheduleSource: "manual" },
+  { id: "m3", bracketType: "swiss", roundNumber: 1, matchNumber: 3, participantA: player("p5"), participantB: player("p6"), winnerId: "p5", scoreA: 2, scoreB: 1, status: "finished", resultType: "played", scheduledAt: "2026-05-15T13:00:00.000Z", scheduleSource: "manual" },
+  { id: "m4", bracketType: "swiss", roundNumber: 1, matchNumber: 4, participantA: player("p7"), participantB: null, winnerId: "p7", scoreA: 1, scoreB: 0, status: "bye", resultType: null, scheduledAt: null, scheduleSource: null },
+  { id: "m5", bracketType: "swiss", roundNumber: 2, matchNumber: 1, participantA: player("p1"), participantB: player("p4"), winnerId: "p1", scoreA: 2, scoreB: 1, status: "finished", resultType: "played", scheduledAt: "2026-05-16T10:00:00.000Z", scheduleSource: "manual" },
+  { id: "m6", bracketType: "swiss", roundNumber: 2, matchNumber: 2, participantA: player("p5"), participantB: player("p7"), winnerId: "p5", scoreA: 2, scoreB: 0, status: "finished", resultType: "played", scheduledAt: "2026-05-16T12:00:00.000Z", scheduleSource: "manual" }
 ];
 
 export const mockResults: ResultsResponse = {

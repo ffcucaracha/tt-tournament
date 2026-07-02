@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { MatchView } from "../../api/types";
+import { MatchResultType, MatchView } from "../../api/types";
 import { MatchCard } from "../../components/MatchCard";
 import { PageTitle } from "../../components/PageTitle";
 import {
@@ -25,6 +25,7 @@ export function AdminMatchesPage(): JSX.Element {
   const [scheduledAtLocal, setScheduledAtLocal] = useState<string>("");
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
+  const [resultType, setResultType] = useState<MatchResultType>("played");
   const [resultError, setResultError] = useState<string | null>(null);
   const [selectedRound, setSelectedRound] = useState<number | "all">("all");
   const matches = matchesQuery.data ?? [];
@@ -85,6 +86,10 @@ export function AdminMatchesPage(): JSX.Element {
     if (!selectedMatch) {
       return;
     }
+    if (resultType !== "played") {
+      saveTechnicalResult(resultType);
+      return;
+    }
     if (!selectedMatch.scheduledAt) {
       return;
     }
@@ -107,9 +112,41 @@ export function AdminMatchesPage(): JSX.Element {
     const winnerId = normalizedScoreA > normalizedScoreB ? selectedMatch.participantA.id : selectedMatch.participantB.id;
     setResultMutation.mutate({
       matchId: selectedMatch.id,
+      resultType: "played",
       winnerId,
       scoreA: normalizedScoreA,
       scoreB: normalizedScoreB
+    });
+  };
+
+  const saveTechnicalResult = (selectedResultType: MatchResultType): void => {
+    setResultError(null);
+    if (!selectedMatch || selectedResultType === "played") {
+      return;
+    }
+    if (!selectedMatch.participantA || !selectedMatch.participantB) {
+      setResultError("Нельзя сохранить результат: у матча не определены оба участника.");
+      return;
+    }
+    if (
+      selectedMatch.status === "finished" &&
+      !window.confirm("Матч уже завершен. Подтвердите редактирование результата.")
+    ) {
+      return;
+    }
+    const winnerId =
+      selectedResultType === "technical_loss_a"
+        ? selectedMatch.participantB.id
+        : selectedResultType === "technical_loss_b"
+          ? selectedMatch.participantA.id
+          : null;
+
+    setResultMutation.mutate({
+      matchId: selectedMatch.id,
+      resultType: selectedResultType,
+      winnerId,
+      scoreA: 0,
+      scoreB: 0
     });
   };
 
@@ -178,11 +215,12 @@ export function AdminMatchesPage(): JSX.Element {
                   setScheduledAtLocal(isoToOmskDateTimeLocalValue(match.scheduledAt));
                   setScoreA(match.scoreA ?? 0);
                   setScoreB(match.scoreB ?? 0);
+                  setResultType(match.resultType ?? "played");
                   setResultError(null);
                 }}
                 type="button"
               >
-                <MatchCard match={match} />
+                <MatchCard match={match} participantLinks={false} />
               </button>
             ))}
           </div>
@@ -206,7 +244,28 @@ export function AdminMatchesPage(): JSX.Element {
 
               {selectedMatch.status === "finished" || selectedMatch.status === "pending" ? (
                 <form className="space-y-2" onSubmit={onSubmitResult}>
-                  {!selectedMatch.scheduledAt ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "played", label: "Обычный счет" },
+                      { value: "technical_loss_a", label: `Тех. ${selectedMatch.participantA?.nickname ?? "A"}` },
+                      { value: "technical_loss_b", label: `Тех. ${selectedMatch.participantB?.nickname ?? "B"}` },
+                      { value: "technical_loss_both", label: "Тех. обоим" }
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        className={`rounded-md border px-3 py-2 text-xs ${
+                          resultType === item.value
+                            ? "border-accent/70 bg-accent/15 text-accent"
+                            : "border-white/20 bg-black/20 text-textMuted"
+                        }`}
+                        onClick={() => setResultType(item.value as MatchResultType)}
+                        type="button"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!selectedMatch.scheduledAt && resultType === "played" ? (
                     <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
                       Сначала назначьте дату и время матча, затем можно сохранить результат.
                     </p>
@@ -216,11 +275,12 @@ export function AdminMatchesPage(): JSX.Element {
                       Матч уже завершен. Изменение результата требует подтверждения.
                     </p>
                   ) : null}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid grid-cols-2 gap-2 ${resultType === "played" ? "" : "opacity-50"}`}>
                     <label className="block">
                       <span className="text-xs text-textMuted">{selectedMatch.participantA?.nickname ?? "Участник A"}</span>
                       <input
                         className="mt-1 w-full rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
+                        disabled={resultType !== "played"}
                         type="number"
                         min={0}
                         value={scoreA}
@@ -231,6 +291,7 @@ export function AdminMatchesPage(): JSX.Element {
                       <span className="text-xs text-textMuted">{selectedMatch.participantB?.nickname ?? "Участник B"}</span>
                       <input
                         className="mt-1 w-full rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
+                        disabled={resultType !== "played"}
                         type="number"
                         min={0}
                         value={scoreB}
@@ -247,13 +308,15 @@ export function AdminMatchesPage(): JSX.Element {
                     className="w-full rounded-md border border-satellite/60 bg-satellite/10 px-3 py-2 text-sm text-satellite disabled:opacity-60"
                     disabled={
                       setResultMutation.isPending ||
-                      !selectedMatch.scheduledAt ||
+                      (resultType === "played" && !selectedMatch.scheduledAt) ||
                       !selectedMatch.participantA ||
                       !selectedMatch.participantB
                     }
                     type="submit"
                   >
-                    {selectedMatch.status === "finished" ? "Сохранить изменения" : "Сохранить результат"}
+                    {resultType === "played"
+                      ? selectedMatch.status === "finished" ? "Сохранить изменения" : "Сохранить результат"
+                      : "Сохранить технический результат"}
                   </button>
                 </form>
               ) : null}

@@ -7,6 +7,10 @@ class CreateParticipantDto {
   @IsString()
   nickname!: string;
 
+  @IsOptional()
+  @IsString()
+  fullName?: string | null;
+
   @IsIn(["comet", "satellite", "star"])
   tribe!: "comet" | "satellite" | "star";
 
@@ -19,6 +23,10 @@ class UpdateParticipantDto {
   @IsOptional()
   @IsString()
   nickname?: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string | null;
 
   @IsOptional()
   @IsIn(["comet", "satellite", "star"])

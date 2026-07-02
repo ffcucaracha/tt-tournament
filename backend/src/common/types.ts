@@ -14,6 +14,12 @@ export type MatchStatus =
   | "finished"
   | "bye";
 
+export type MatchResultType =
+  | "played"
+  | "technical_loss_a"
+  | "technical_loss_b"
+  | "technical_loss_both";
+
 export type BracketType = "swiss";
 
 export type ScheduleSource = "manual" | "auto";
@@ -50,6 +56,7 @@ export interface Participant {
   id: string;
   tournamentId: string;
   nickname: string;
+  fullName: string | null;
   tribe: TribeCode;
   telegramContact: string | null;
   registrationOrder: number;
@@ -110,6 +117,7 @@ export interface MatchView {
   scoreA: number | null;
   scoreB: number | null;
   status: MatchStatus;
+  resultType: MatchResultType | null;
   scheduledAt: string | null;
   scheduleSource: ScheduleSource | null;
 }

@@ -9,6 +9,7 @@ import { AdminParticipantsPage } from "../pages/admin/AdminParticipantsPage";
 import { AdminSettingsPage } from "../pages/admin/AdminSettingsPage";
 import { AdminTournamentsPage } from "../pages/admin/AdminTournamentsPage";
 import { BracketPage } from "../pages/public/BracketPage";
+import { ParticipantProfilePage } from "../pages/public/ParticipantProfilePage";
 import { ParticipantsPage } from "../pages/public/ParticipantsPage";
 import { ResultsPage } from "../pages/public/ResultsPage";
 import { SchedulePage } from "../pages/public/SchedulePage";
@@ -20,6 +21,7 @@ export function AppRouter(): JSX.Element {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Navigate to="/participants" replace />} />
         <Route path="/participants" element={<ParticipantsPage />} />
+        <Route path="/participants/:participantId" element={<ParticipantProfilePage />} />
         <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/bracket" element={<BracketPage />} />
         <Route path="/results" element={<ResultsPage />} />

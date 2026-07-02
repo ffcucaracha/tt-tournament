@@ -2,6 +2,7 @@ import {
   AuditRecord,
   BracketResponse,
   CsvImportResult,
+  MatchResultType,
   MatchView,
   Participant,
   PublicOverviewResponse,
@@ -46,13 +47,14 @@ export interface TournamentRepository {
   getAdminParticipants(tournamentId: string): Promise<Participant[]>;
   addParticipant(
     tournamentId: string,
-    payload: { nickname: string; tribe: "comet" | "satellite" | "star"; telegramContact?: string | null }
+    payload: { nickname: string; fullName?: string | null; tribe: "comet" | "satellite" | "star"; telegramContact?: string | null }
   ): Promise<Participant>;
   importParticipantsCsv(tournamentId: string, csv: string): Promise<CsvImportResult>;
   editParticipant(
     participantId: string,
     payload: Partial<{
       nickname: string;
+      fullName: string | null;
       tribe: "comet" | "satellite" | "star";
       telegramContact: string | null;
       status: "registered" | "seeded" | "active" | "eliminated" | "finished";
@@ -64,7 +66,10 @@ export interface TournamentRepository {
   generateNextRound(tournamentId: string): Promise<{ round: number }>;
   scheduleMatch(matchId: string, scheduledAt: string): Promise<MatchView>;
   scheduleMatchAuto(matchId: string): Promise<MatchView>;
-  saveMatchResult(matchId: string, payload: { winnerId: string; scoreA: number; scoreB: number }): Promise<MatchView>;
+  saveMatchResult(
+    matchId: string,
+    payload: { resultType?: MatchResultType; winnerId?: string | null; scoreA?: number; scoreB?: number }
+  ): Promise<MatchView>;
   resetMatchResult(matchId: string): Promise<MatchView>;
   getAuditLog(tournamentId: string): Promise<AuditRecord[]>;
 }

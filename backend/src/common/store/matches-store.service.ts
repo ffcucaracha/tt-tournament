@@ -1,8 +1,8 @@
 import { BracketType, MatchStatus, Participant, Prisma, RoundStatus, ScheduleSource, TournamentStatus } from "@prisma/client";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { MatchView } from "../types";
+import { MatchResultType, MatchView } from "../types";
 import { PrismaService } from "../prisma.service";
-import { aggregateTribeStats, MatchWithParticipants, toMatchView } from "./store.mappers";
+import { aggregateTribeStats, inferMatchResultType, MatchWithParticipants, toMatchView } from "./store.mappers";
 import { SetResultInput, UpdateMatchInput } from "./store.types";
 import { AuditRecordsService } from "./audit-records.service";
 
@@ -219,20 +219,27 @@ export class MatchesStoreService {
     const match = await this.prisma.match.findUnique({ where: { id: matchId }, include: { participantA: true, participantB: true } });
     if (!match) throw new NotFoundException(`Match ${matchId} not found`);
     if (match.status === MatchStatus.bye) throw new BadRequestException("Cannot edit bye result");
-    if (!match.scheduledAt) throw new BadRequestException("Match time must be scheduled before saving result");
     if (!match.participantAId || !match.participantBId) throw new BadRequestException("Match participants are not resolved");
-    if (input.winnerId !== match.participantAId && input.winnerId !== match.participantBId) {
-      throw new BadRequestException("Winner must be one of match participants");
-    }
 
     const tournament = await this.prisma.tournament.findUnique({ where: { id: match.tournamentId } });
     if (!tournament) throw new NotFoundException("Tournament not found");
     if (tournament.status === TournamentStatus.finished) throw new BadRequestException("Tournament already finished");
 
-    const loserId = input.winnerId === match.participantAId ? match.participantBId : match.participantAId;
+    const resultType = input.resultType ?? "played";
+    const result = this.resolveMatchResult(resultType, input, match);
+    if (resultType === "played" && !match.scheduledAt) {
+      throw new BadRequestException("Match time must be scheduled before saving result");
+    }
+
     await this.prisma.match.update({
       where: { id: matchId },
-      data: { winnerId: input.winnerId, loserId, scoreA: input.scoreA, scoreB: input.scoreB, status: MatchStatus.finished }
+      data: {
+        winnerId: result.winnerId,
+        loserId: result.loserId,
+        scoreA: result.scoreA,
+        scoreB: result.scoreB,
+        status: MatchStatus.finished
+      }
     });
 
     await this.syncRoundStatus(match.roundId);
@@ -245,7 +252,7 @@ export class MatchesStoreService {
       entityId: matchId,
       beforeJson: this.toAuditMatchSnapshot(match),
       afterJson: this.toAuditMatchSnapshot(updated),
-      metadataJson: { description: "Match result saved" }
+      metadataJson: { description: "Match result saved", resultType }
     });
     return toMatchView(updated);
   }
@@ -414,12 +421,17 @@ export class MatchesStoreService {
         a.byes += 1; a.points += 1; a.wins += 1; a.games += 1;
         continue;
       }
-      if (!m.participantBId || !m.winnerId) continue;
+      if (!m.participantBId) continue;
       const b = map.get(m.participantBId);
       if (!b) continue;
       a.games += 1; b.games += 1;
-      if (m.winnerId === a.participantId) { a.wins += 1; a.points += 1; b.losses += 1; }
-      else { b.wins += 1; b.points += 1; a.losses += 1; }
+      if (!m.winnerId) {
+        a.losses += 1; b.losses += 1;
+      } else if (m.winnerId === a.participantId) {
+        a.wins += 1; a.points += 1; b.losses += 1;
+      } else {
+        b.wins += 1; b.points += 1; a.losses += 1;
+      }
     }
 
     for (const m of finished) {
@@ -508,6 +520,51 @@ export class MatchesStoreService {
     }
   }
 
+  private resolveMatchResult(
+    resultType: MatchResultType,
+    input: SetResultInput,
+    match: MatchWithParticipants
+  ): { winnerId: string | null; loserId: string | null; scoreA: number; scoreB: number } {
+    if (!match.participantAId || !match.participantBId) {
+      throw new BadRequestException("Match participants are not resolved");
+    }
+
+    if (resultType === "technical_loss_a") {
+      return { winnerId: match.participantBId, loserId: match.participantAId, scoreA: 0, scoreB: 0 };
+    }
+
+    if (resultType === "technical_loss_b") {
+      return { winnerId: match.participantAId, loserId: match.participantBId, scoreA: 0, scoreB: 0 };
+    }
+
+    if (resultType === "technical_loss_both") {
+      return { winnerId: null, loserId: null, scoreA: 0, scoreB: 0 };
+    }
+
+    if (input.winnerId !== match.participantAId && input.winnerId !== match.participantBId) {
+      throw new BadRequestException("Winner must be one of match participants");
+    }
+    const winnerId = input.winnerId;
+    if (input.scoreA === undefined || input.scoreB === undefined) {
+      throw new BadRequestException("Score is required");
+    }
+    if (input.scoreA === input.scoreB) {
+      throw new BadRequestException("Score cannot be equal");
+    }
+
+    const scoreWinnerId = input.scoreA > input.scoreB ? match.participantAId : match.participantBId;
+    if (winnerId !== scoreWinnerId) {
+      throw new BadRequestException("Winner must match score");
+    }
+
+    return {
+      winnerId,
+      loserId: winnerId === match.participantAId ? match.participantBId : match.participantAId,
+      scoreA: input.scoreA,
+      scoreB: input.scoreB
+    };
+  }
+
   private async reopenRoundIfNeeded(roundId: string): Promise<void> {
     const pendingCount = await this.prisma.match.count({ where: { roundId, status: MatchStatus.pending } });
     if (pendingCount > 0) {
@@ -574,6 +631,7 @@ export class MatchesStoreService {
       scoreA: match.scoreA,
       scoreB: match.scoreB,
       status: match.status,
+      resultType: inferMatchResultType(match),
       scheduledAt: match.scheduledAt ? match.scheduledAt.toISOString() : null,
       scheduleSource: match.scheduleSource
     };

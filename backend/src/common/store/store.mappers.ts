@@ -1,6 +1,6 @@
 import { BracketType, Match, Participant, Tournament, TribeCode } from "@prisma/client";
 import { Prisma } from "@prisma/client";
-import { MatchView, ParticipantView } from "../types";
+import { MatchResultType, MatchView, ParticipantView } from "../types";
 
 export type MatchWithParticipants = Prisma.MatchGetPayload<{
   include: {
@@ -35,6 +35,7 @@ export function serializeParticipant(row: Participant): Record<string, unknown> 
     id: row.id,
     tournamentId: row.tournamentId,
     nickname: row.nickname,
+    fullName: row.fullName,
     tribe: row.tribe,
     telegramContact: row.telegramContact,
     registrationOrder: row.registrationOrder,
@@ -58,6 +59,24 @@ export function toParticipantView(participant: Participant | null): ParticipantV
   };
 }
 
+export function inferMatchResultType(row: Pick<Match, "status" | "winnerId" | "participantAId" | "participantBId" | "scoreA" | "scoreB">): MatchResultType | null {
+  if (row.status !== "finished") {
+    return null;
+  }
+  if (row.scoreA === 0 && row.scoreB === 0) {
+    if (!row.winnerId) {
+      return "technical_loss_both";
+    }
+    if (row.winnerId === row.participantAId) {
+      return "technical_loss_b";
+    }
+    if (row.winnerId === row.participantBId) {
+      return "technical_loss_a";
+    }
+  }
+  return "played";
+}
+
 export function toMatchView(row: MatchWithParticipants): MatchView {
   return {
     id: row.id,
@@ -70,6 +89,7 @@ export function toMatchView(row: MatchWithParticipants): MatchView {
     scoreA: row.scoreA,
     scoreB: row.scoreB,
     status: row.status,
+    resultType: inferMatchResultType(row),
     scheduledAt: row.scheduledAt ? row.scheduledAt.toISOString() : null,
     scheduleSource: row.scheduleSource
   };

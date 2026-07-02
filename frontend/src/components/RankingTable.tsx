@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { StandingRow, TribeStatsRow } from "../api/types";
 import { TribeBadge } from "./TribeBadge";
 
@@ -29,7 +30,11 @@ export function RankingTable({ standings, tribeStats }: RankingTableProps): JSX.
               {standings.map((row) => (
                 <tr key={row.participantId} className="border-t border-white/5">
                   <td className="py-2 text-textMain">{row.place}</td>
-                  <td className="py-2 text-textMain">{row.nickname}</td>
+                  <td className="py-2">
+                    <Link className="text-accent hover:text-accent/80" to={`/participants/${row.participantId}`}>
+                      {row.nickname}
+                    </Link>
+                  </td>
                   <td className="py-2">
                     <TribeBadge tribe={row.tribe} compact />
                   </td>

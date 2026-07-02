@@ -28,13 +28,11 @@ export class ParticipantsStoreService {
       throw new BadRequestException("Participants can be added only when tournament status is draft");
     }
     const existingCount = await this.prisma.participant.count({ where: { tournamentId } });
-    if (existingCount >= 30) {
-      throw new BadRequestException("Tournament cannot contain more than 30 participants");
-    }
     const created = await this.prisma.participant.create({
       data: {
         tournamentId,
         nickname: input.nickname,
+        fullName: input.fullName ?? null,
         tribe: input.tribe,
         telegramContact: input.telegramContact ?? null,
         registrationOrder: existingCount + 1,
@@ -80,7 +78,6 @@ export class ParticipantsStoreService {
       const scoped = await tx.participant.findMany({ where: { tournamentId }, orderBy: { registrationOrder: "asc" } });
       if (!isStartParticipantCountValid(scoped.length)) {
         if (scoped.length < 10) throw new BadRequestException("Tournament requires at least 10 participants to start");
-        throw new BadRequestException("Tournament cannot contain more than 30 participants");
       }
 
       await tx.participant.updateMany({

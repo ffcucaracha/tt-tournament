@@ -1,5 +1,5 @@
 import { request } from "./httpClient";
-import { AuditRecord, CsvImportResult, MatchView, Participant, Tournament, TournamentStatus } from "./types";
+import { AuditRecord, CsvImportResult, MatchResultType, MatchView, Participant, Tournament, TournamentStatus } from "./types";
 
 export async function fetchAdminTournaments(): Promise<{ items: Tournament[] }> {
   return request<{ items: Tournament[] }>("/admin/tournaments");
@@ -44,7 +44,7 @@ export async function fetchAdminParticipants(tournamentId: string): Promise<{ it
 
 export async function createParticipant(
   tournamentId: string,
-  payload: { nickname: string; tribe: "comet" | "satellite" | "star"; telegramContact?: string | null }
+  payload: { nickname: string; fullName?: string | null; tribe: "comet" | "satellite" | "star"; telegramContact?: string | null }
 ): Promise<Participant> {
   return request<Participant>(`/admin/tournaments/${tournamentId}/participants`, { method: "POST", json: payload });
 }
@@ -53,6 +53,7 @@ export async function patchParticipant(
   participantId: string,
   payload: Partial<{
     nickname: string;
+    fullName: string | null;
     tribe: "comet" | "satellite" | "star";
     telegramContact: string | null;
     status: "registered" | "seeded" | "active" | "eliminated" | "finished";
@@ -97,7 +98,7 @@ export async function scheduleMatchAuto(matchId: string): Promise<MatchView> {
 
 export async function setMatchResult(
   matchId: string,
-  payload: { winnerId: string; scoreA: number; scoreB: number }
+  payload: { resultType?: MatchResultType; winnerId?: string | null; scoreA?: number; scoreB?: number }
 ): Promise<MatchView> {
   return request<MatchView>(`/admin/matches/${matchId}/result`, { method: "POST", json: payload });
 }

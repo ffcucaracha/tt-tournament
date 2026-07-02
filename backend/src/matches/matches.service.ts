@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { DataStoreService } from "../common/data-store.service";
-import { MatchStatus, MatchView } from "../common/types";
+import { MatchResultType, MatchStatus, MatchView } from "../common/types";
 
 @Injectable()
 export class MatchesService {
@@ -43,9 +43,10 @@ export class MatchesService {
   setResult(
     matchId: string,
     input: {
-      winnerId: string;
-      scoreA: number;
-      scoreB: number;
+      resultType?: MatchResultType;
+      winnerId?: string | null;
+      scoreA?: number;
+      scoreB?: number;
     },
     adminId: string | null
   ): Promise<MatchView> {

@@ -118,6 +118,7 @@ model Participant {
   tournamentId      String
   tournament        Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   nickname          String
+  fullName          String?
   tribe             TribeCode
   telegramContact   String?
   registrationOrder Int

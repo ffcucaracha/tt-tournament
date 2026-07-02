@@ -16,6 +16,8 @@ type Props = {
     onSubmitParticipantEdit: (event: FormEvent) => void
     editNickname: string
     setEditNickname: (value: string) => void
+    editFullName: string
+    setEditFullName: (value: string) => void
     editTribe: "comet" | "satellite" | "star"
     setEditTribe: (value: "comet" | "satellite" | "star") => void
     editContact: string
@@ -26,7 +28,7 @@ type Props = {
 export default function ParticipantItem({
     participant, isEditing, canManageParticipants,
     onDeleteParticipant, onToggleEliminated, cancelEditParticipant, startEditParticipant, onSubmitParticipantEdit,
-    editNickname, setEditNickname, editTribe, setEditTribe, editContact, setEditContact, isPending
+    editNickname, setEditNickname, editFullName, setEditFullName, editTribe, setEditTribe, editContact, setEditContact, isPending
 }: Props) {
 
 
@@ -42,6 +44,7 @@ export default function ParticipantItem({
                         <TribeBadge tribe={participant.tribe} compact />
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-textMuted">
+                        {participant.fullName ? <span>{participant.fullName}</span> : null}
                         <span>{participant.telegramContact ?? "Telegram не указан"}</span>
                         <span>Добавлен: {formatIsoInOmsk(participant.createdAt)}</span>
                     </div>
@@ -83,12 +86,19 @@ export default function ParticipantItem({
             </div>
 
             {isEditing ? (
-                <form className="grid gap-2 border-t border-white/10 pt-3 md:grid-cols-3" onSubmit={onSubmitParticipantEdit}>
+                <form className="grid gap-2 border-t border-white/10 pt-3 md:grid-cols-4" onSubmit={onSubmitParticipantEdit}>
                     <input
                         className="rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
                         value={editNickname}
                         onChange={(event) => setEditNickname(event.target.value)}
                         placeholder="Ник"
+                        disabled={isPending}
+                    />
+                    <input
+                        className="rounded-md border border-white/20 bg-black/20 px-3 py-2 text-sm text-textMain"
+                        value={editFullName}
+                        onChange={(event) => setEditFullName(event.target.value)}
+                        placeholder="Имя"
                         disabled={isPending}
                     />
                     <select
@@ -108,7 +118,7 @@ export default function ParticipantItem({
                         placeholder="@telegram"
                         disabled={isPending}
                     />
-                    <div className="flex gap-2 md:col-span-3">
+                    <div className="flex gap-2 md:col-span-4">
                         <button
                             className="rounded-md border border-satellite/60 bg-satellite/15 px-3 py-2 text-sm text-satellite disabled:opacity-60"
                             type="submit"

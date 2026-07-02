@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tournamentRepository } from "../data/repository";
-import { TournamentStatus } from "../api/types";
+import { MatchResultType, TournamentStatus } from "../api/types";
 
 export const ACTIVE_TOURNAMENT_ID = "active";
 const PUBLIC_LIVE_REFETCH_INTERVAL_MS = 5_000;
@@ -147,7 +147,12 @@ export function useAuditLog() {
 export function useAddParticipant() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { nickname: string; tribe: "comet" | "satellite" | "star"; telegramContact?: string | null }) =>
+    mutationFn: (payload: {
+      nickname: string;
+      fullName?: string | null;
+      tribe: "comet" | "satellite" | "star";
+      telegramContact?: string | null;
+    }) =>
       tournamentRepository.addParticipant(ACTIVE_TOURNAMENT_ID, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["participants", ACTIVE_TOURNAMENT_ID] });
@@ -174,6 +179,7 @@ export function useEditParticipant() {
       participantId: string;
       data: Partial<{
         nickname: string;
+        fullName: string | null;
         tribe: "comet" | "satellite" | "star";
         telegramContact: string | null;
         status: "registered" | "seeded" | "active" | "eliminated" | "finished";
@@ -263,8 +269,15 @@ export function useScheduleMatch() {
 export function useSetMatchResult() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { matchId: string; winnerId: string; scoreA: number; scoreB: number }) =>
+    mutationFn: (payload: {
+      matchId: string;
+      resultType?: MatchResultType;
+      winnerId?: string | null;
+      scoreA?: number;
+      scoreB?: number;
+    }) =>
       tournamentRepository.saveMatchResult(payload.matchId, {
+        resultType: payload.resultType,
         winnerId: payload.winnerId,
         scoreA: payload.scoreA,
         scoreB: payload.scoreB

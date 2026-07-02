@@ -17,7 +17,7 @@ interface CsvImportResult {
   skipped: CsvImportSkippedRow[];
 }
 
-type CsvColumn = "nickname" | "tribe" | "telegramContact";
+type CsvColumn = "nickname" | "fullName" | "tribe" | "telegramContact";
 
 const SUPPORTED_TRIBES: TribeCode[] = ["comet", "satellite", "star"];
 
@@ -31,7 +31,8 @@ const TRIBE_ALIASES: Record<string, TribeCode> = {
 };
 
 const CSV_HEADER_ALIASES: Record<CsvColumn, string[]> = {
-  nickname: ["nickname", "nick", "name", "player", "participant", "ник", "никнейм", "никнейм участника", "имя"],
+  nickname: ["nickname", "nick", "platform nickname", "platform nick", "player", "participant", "ник", "никнейм", "никнейм участника", "ник на платформе"],
+  fullName: ["full name", "real name", "name", "имя", "полное имя", "фио", "имя участника"],
   tribe: ["tribe", "team", "group", "трайб", "траиб", "команда", "группа"],
   telegramContact: ["telegram", "telegram contact", "telegram username", "tg", "телеграм", "telegramm"]
 };
@@ -150,6 +151,14 @@ function resolveTribeCode(rawTribe: string): TribeCode | null {
   return TRIBE_ALIASES[normalized] ?? null;
 }
 
+function looksLikeTimestamp(value: string): boolean {
+  const normalized = normalizeCsvCell(value);
+  if (!normalized) {
+    return false;
+  }
+  return /\d{1,4}[./:-]\d{1,2}[./:-]\d{1,4}/.test(normalized) || !Number.isNaN(Date.parse(normalized));
+}
+
 function isHeaderCellMatch(headerCell: string, alias: string): boolean {
   const normalizedHeader = normalizeText(headerCell);
   const normalizedAlias = normalizeText(alias);
@@ -184,8 +193,9 @@ function resolveHeaderMap(headerRow: string[]): Partial<Record<CsvColumn, number
 function resolveCsvIndexes(rows: string[][], hasHeader: boolean, headerMap: Partial<Record<CsvColumn, number>>): Record<CsvColumn, number> {
   const defaultIndexes: Record<CsvColumn, number> = {
     nickname: headerMap.nickname ?? 0,
-    tribe: headerMap.tribe ?? 1,
-    telegramContact: headerMap.telegramContact ?? 2
+    fullName: headerMap.fullName ?? (hasHeader ? -1 : 1),
+    tribe: headerMap.tribe ?? 2,
+    telegramContact: headerMap.telegramContact ?? 3
   };
 
   if (hasHeader) {
@@ -194,12 +204,33 @@ function resolveCsvIndexes(rows: string[][], hasHeader: boolean, headerMap: Part
 
   const firstDataRow = rows[0] ?? [];
   const defaultTribe = resolveTribeCode(normalizeCsvCell(firstDataRow[defaultIndexes.tribe]));
-  const googleFormsTribe = resolveTribeCode(normalizeCsvCell(firstDataRow[2]));
-  if (!defaultTribe && googleFormsTribe && firstDataRow.length >= 4) {
+  const legacyGoogleFormsTribe = resolveTribeCode(normalizeCsvCell(firstDataRow[2]));
+  if (legacyGoogleFormsTribe && looksLikeTimestamp(firstDataRow[0]) && firstDataRow.length >= 4) {
     return {
       nickname: 1,
+      fullName: -1,
       tribe: 2,
       telegramContact: 3
+    };
+  }
+
+  const legacyTribe = resolveTribeCode(normalizeCsvCell(firstDataRow[1]));
+  if (!defaultTribe && legacyTribe && firstDataRow.length >= 3) {
+    return {
+      nickname: 0,
+      fullName: -1,
+      tribe: 1,
+      telegramContact: 2
+    };
+  }
+
+  const googleFormsTribe = resolveTribeCode(normalizeCsvCell(firstDataRow[3]));
+  if (!defaultTribe && googleFormsTribe && firstDataRow.length >= 5) {
+    return {
+      nickname: 1,
+      fullName: 2,
+      tribe: 3,
+      telegramContact: 4
     };
   }
 
@@ -218,6 +249,7 @@ export class ParticipantsService {
     tournamentId: string,
     input: {
       nickname: string;
+      fullName?: string | null;
       tribe: TribeCode;
       telegramContact?: string | null;
     }
@@ -229,6 +261,7 @@ export class ParticipantsService {
     participantId: string,
     input: {
       nickname?: string;
+      fullName?: string | null;
       tribe?: TribeCode;
       telegramContact?: string | null;
       status?: "registered" | "seeded" | "active" | "eliminated" | "finished";
@@ -274,6 +307,7 @@ export class ParticipantsService {
     for (let rowIndex = startIndex; rowIndex < rows.length; rowIndex += 1) {
       const row = rows[rowIndex];
       const nickname = normalizeCsvCell(row[indexes.nickname]);
+      const fullName = normalizeCsvCell(row[indexes.fullName]) || null;
       const tribe = resolveTribeCode(normalizeCsvCell(row[indexes.tribe]));
       const telegramContact = normalizeCsvCell(row[indexes.telegramContact]) || null;
 
@@ -299,6 +333,7 @@ export class ParticipantsService {
         created.push(
           await this.store.createParticipant(tournamentId, {
             nickname,
+            fullName,
             tribe,
             telegramContact
           })

@@ -6,7 +6,7 @@ Monorepo with strict separation between:
 - `backend`: API + tournament business logic
 - `deploy`: infra and container runtime config
 
-Current tournament format is Swiss system only, with support for 10-30 participants and multi-day progression.
+Current tournament format is Swiss system only, with support for 10+ participants and multi-day progression.
 
 ## Stack
 
@@ -63,8 +63,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 Participant limits:
 
 - Draft can exist with any participant count.
-- Start is allowed only with 10-30 participants.
-- Adding the 31st participant is rejected.
+- Start is allowed with at least 10 participants.
 
 ## UI Model
 
@@ -91,7 +90,8 @@ Default in `.env.example` is `api`.
 Admin UI supports CSV import on `/admin/participants`.
 
 - Allowed only when tournament status is `draft`.
-- Supported columns (RU/EN headers): nickname, tribe, telegram.
+- Supported columns (RU/EN headers): nickname, full name, tribe, telegram.
+- CSV without headers is read as `nickname, full name, tribe, telegram`; Google Forms exports with timestamp are read as `timestamp, nickname, full name, tribe, telegram`.
 - Tribes are accepted as `comet|satellite|star` and `Комета|Спутник|Звезда`.
 
 Sample file with 20 participants:

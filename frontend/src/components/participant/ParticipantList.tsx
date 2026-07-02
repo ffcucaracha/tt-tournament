@@ -12,12 +12,14 @@ type Props = {
 export default function ParticipantList({ participants, canManageParticipants, editMutation, removeMutation }: Props) {
     const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
     const [editNickname, setEditNickname] = useState("");
+    const [editFullName, setEditFullName] = useState("");
     const [editTribe, setEditTribe] = useState<"comet" | "satellite" | "star">("comet");
     const [editContact, setEditContact] = useState("");
 
     const startEditParticipant = (participant: Participant): void => {
         setEditingParticipantId(participant.id);
         setEditNickname(participant.nickname);
+        setEditFullName(participant.fullName ?? "");
         setEditTribe(participant.tribe);
         setEditContact(participant.telegramContact ?? "");
     };
@@ -25,6 +27,7 @@ export default function ParticipantList({ participants, canManageParticipants, e
     const cancelEditParticipant = (): void => {
         setEditingParticipantId(null);
         setEditNickname("");
+        setEditFullName("");
         setEditContact("");
     };
 
@@ -38,6 +41,7 @@ export default function ParticipantList({ participants, canManageParticipants, e
                 participantId: editingParticipantId,
                 data: {
                     nickname: editNickname.trim(),
+                    fullName: editFullName.trim() || null,
                     tribe: editTribe,
                     telegramContact: editContact.trim() || null
                 }
@@ -90,6 +94,8 @@ export default function ParticipantList({ participants, canManageParticipants, e
                     onSubmitParticipantEdit={onSubmitParticipantEdit}
                     editNickname={editNickname}
                     setEditNickname={setEditNickname}
+                    editFullName={editFullName}
+                    setEditFullName={setEditFullName}
                     editTribe={editTribe}
                     setEditTribe={setEditTribe}
                     editContact={editContact}

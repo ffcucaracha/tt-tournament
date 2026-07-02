@@ -81,8 +81,7 @@ export const mockRepository: TournamentRepository = {
   async getAdminParticipants(): Promise<Participant[]> { return clone(participants); },
   async addParticipant(_id, payload): Promise<Participant> {
     if (tournament.status !== "draft") throw new Error("Participants can be added only while tournament is draft");
-    if (participants.length >= 30) throw new Error("Tournament cannot contain more than 30 participants");
-    const participant: Participant = { id: `p${participants.length + 1}`, tournamentId: tournament.id, nickname: payload.nickname, tribe: payload.tribe, telegramContact: payload.telegramContact ?? null, registrationOrder: participants.length + 1, seedNumber: null, status: "registered", finalPlace: null, finalScore: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const participant: Participant = { id: `p${participants.length + 1}`, tournamentId: tournament.id, nickname: payload.nickname, fullName: payload.fullName ?? null, tribe: payload.tribe, telegramContact: payload.telegramContact ?? null, registrationOrder: participants.length + 1, seedNumber: null, status: "registered", finalPlace: null, finalScore: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     participants.push(participant);
     return clone(participant);
   },
@@ -96,7 +95,6 @@ export const mockRepository: TournamentRepository = {
   async removeParticipant(participantId): Promise<void> { participants = participants.filter((p) => p.id !== participantId); },
   async seedTournament(): Promise<void> {
     if (participants.length < 10) throw new Error("Tournament requires at least 10 participants to start");
-    if (participants.length > 30) throw new Error("Tournament cannot contain more than 30 participants");
     tournament.status = "in_progress";
   },
   async getAdminMatches(): Promise<MatchView[]> { return clone(matches); },
@@ -106,7 +104,7 @@ export const mockRepository: TournamentRepository = {
   },
   async scheduleMatch(matchId, scheduledAt): Promise<MatchView> { const m = matches.find((x) => x.id === matchId); if (!m) throw new Error("Match not found"); m.scheduledAt = scheduledAt; return clone(m); },
   async scheduleMatchAuto(matchId): Promise<MatchView> { return this.scheduleMatch(matchId, new Date().toISOString()); },
-  async saveMatchResult(matchId, payload): Promise<MatchView> { const m = matches.find((x) => x.id === matchId); if (!m) throw new Error("Match not found"); m.winnerId = payload.winnerId; m.scoreA = payload.scoreA; m.scoreB = payload.scoreB; m.status = "finished"; return clone(m); },
-  async resetMatchResult(matchId): Promise<MatchView> { const m = matches.find((x) => x.id === matchId); if (!m) throw new Error("Match not found"); m.winnerId = null; m.scoreA = null; m.scoreB = null; m.status = "pending"; return clone(m); },
+  async saveMatchResult(matchId, payload): Promise<MatchView> { const m = matches.find((x) => x.id === matchId); if (!m) throw new Error("Match not found"); m.resultType = payload.resultType ?? "played"; m.winnerId = payload.winnerId ?? null; m.scoreA = payload.scoreA ?? 0; m.scoreB = payload.scoreB ?? 0; m.status = "finished"; return clone(m); },
+  async resetMatchResult(matchId): Promise<MatchView> { const m = matches.find((x) => x.id === matchId); if (!m) throw new Error("Match not found"); m.winnerId = null; m.scoreA = null; m.scoreB = null; m.resultType = null; m.status = "pending"; return clone(m); },
   async getAuditLog(): Promise<AuditRecord[]> { return clone(audit); }
 };
