@@ -283,18 +283,20 @@ export class MatchesStoreService {
   async getPublicResults(tournamentId: string): Promise<Record<string, unknown>> {
     const touranment = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     const standings = await this.getStandings(tournamentId);
+    const participantsTotal = standings.length;
     const ranked = standings.map((s, idx) => ({
       participantId: s.participantId,
       nickname: s.nickname,
       tribe: s.tribe,
       place: idx + 1,
+      rankScore: participantsTotal - idx,
       wins: s.wins,
       losses: s.losses,
       score: s.points,
       bye: s.byes,
       buchholz: s.buchholz,
       games: s.games,
-      sortReason: "points > buchholz > id"
+      sortReason: "points > buchholz > wins > id"
     }));
 
     return {
@@ -446,7 +448,7 @@ export class MatchesStoreService {
     return [...map.values()].sort((a, b) =>
       b.points - a.points ||
       b.buchholz - a.buchholz ||
-      (a.seedNumber ?? Number.MAX_SAFE_INTEGER) - (b.seedNumber ?? Number.MAX_SAFE_INTEGER) ||
+      b.wins - a.wins ||
       a.participantId.localeCompare(b.participantId)
     );
   }

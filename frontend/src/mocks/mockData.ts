@@ -78,6 +78,7 @@ export const mockResults: ResultsResponse = {
     nickname: participant.nickname,
     tribe: participant.tribe,
     place: index + 1,
+    rankScore: 6 - index,
     wins: Math.max(0, 3 - index),
     losses: index > 2 ? 2 : 1,
     score: Math.max(0, 3 - index),

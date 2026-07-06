@@ -96,6 +96,7 @@ export interface StandingRow {
   nickname: string;
   tribe: TribeCode;
   place: number;
+  rankScore?: number;
   wins: number;
   losses: number;
   score: number;

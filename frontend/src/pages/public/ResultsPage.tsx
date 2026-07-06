@@ -25,6 +25,16 @@ export function ResultsPage(): JSX.Element {
         }
         rightSlot={<span className="text-sm text-textMuted">{overviewQuery?.data?.tournament.title}</span>}
       />
+      <details className="rounded-md border border-white/10 bg-panel/90 px-4 py-3 text-sm text-textMuted">
+        <summary className="cursor-pointer select-none text-textMain">Как считается место</summary>
+        <div className="mt-2 space-y-1 text-xs leading-5">
+          <p>1. Больше очков: победа и bye дают 1 очко, поражение даёт 0.</p>
+          <p>2. При равных очках выше игрок с большим Buchholz.</p>
+          <p>3. При равном Buchholz выше игрок с большим числом побед.</p>
+          <p>4. Если всё равно равенство, применяется техническая сортировка.</p>
+          <p>Баллы — отдельный зачёт для рейтинга трайбов: чем выше место, тем больше баллов.</p>
+        </div>
+      </details>
       <RankingTable standings={resultsQuery.data.standings} tribeStats={resultsQuery.data.tribeStats} />
     </div>
   );

@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { StandingRow, TribeStatsRow } from "../api/types";
 import { TribeBadge } from "./TribeBadge";
 
+const compactHeadCellClass = "w-14 px-1 pb-2 text-center";
+const compactBodyCellClass = "w-14 px-1 py-2 text-center";
+
 interface RankingTableProps {
   standings: StandingRow[];
   tribeStats: TribeStatsRow[];
@@ -13,21 +16,22 @@ export function RankingTable({ standings, tribeStats }: RankingTableProps): JSX.
       <div className="rounded-lg border border-white/10 bg-panel/90 p-4 lg:col-span-2">
         <h3 className="mb-3 text-lg font-semibold text-textMain">Итоговые места</h3>
         <div className="overflow-auto">
-          <table className="w-full min-w-[520px] text-left text-sm">
+          <table className="w-full min-w-[560px] text-left text-sm">
             <thead className="text-textMuted">
               <tr>
                 <th className="pb-2">Место</th>
                 <th className="pb-2">Игрок</th>
                 <th className="pb-2">Трайб</th>
-                <th className="pb-2">Игры</th>
-                <th className="pb-2">W-L</th>
-                <th className="pb-2">Bye</th>
-                <th className="pb-2">Очки</th>
-                <th className="pb-2">Buchholz</th>
+                <th className={compactHeadCellClass}>Игры</th>
+                <th className={compactHeadCellClass}>W-L</th>
+                <th className={compactHeadCellClass}>Bye</th>
+                <th className={compactHeadCellClass}>Очки</th>
+                <th className={compactHeadCellClass}>Buchholz</th>
+                <th className={compactHeadCellClass}>Баллы</th>
               </tr>
             </thead>
             <tbody>
-              {standings.map((row) => (
+              {standings.map((row, index) => (
                 <tr key={row.participantId} className="border-t border-white/5">
                   <td className="py-2 text-textMain">{row.place}</td>
                   <td className="py-2">
@@ -38,13 +42,16 @@ export function RankingTable({ standings, tribeStats }: RankingTableProps): JSX.
                   <td className="py-2">
                     <TribeBadge tribe={row.tribe} compact />
                   </td>
-                  <td className="py-2 text-textMuted">{row.games ?? row.wins + row.losses}</td>
-                  <td className="py-2 text-textMuted">
+                  <td className={`${compactBodyCellClass} text-textMuted`}>{row.games ?? row.wins + row.losses}</td>
+                  <td className={`${compactBodyCellClass} text-textMuted`}>
                     {row.wins}-{row.losses}
                   </td>
-                  <td className="py-2 text-textMuted">{row.bye ?? 0}</td>
-                  <td className="py-2 text-textMain">{row.score}</td>
-                  <td className="py-2 text-textMuted">{row.buchholz ?? 0}</td>
+                  <td className={`${compactBodyCellClass} text-textMuted`}>{row.bye ?? 0}</td>
+                  <td className={`${compactBodyCellClass} text-textMain`}>{row.score}</td>
+                  <td className={`${compactBodyCellClass} text-textMuted`}>{row.buchholz ?? 0}</td>
+                  <td className={`${compactBodyCellClass} text-base font-semibold text-textMain`}>
+                    {row.rankScore ?? standings.length - index}
+                  </td>
                 </tr>
               ))}
             </tbody>
