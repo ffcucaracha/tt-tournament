@@ -22,6 +22,22 @@ type Standing = {
 
 type PairingCandidate = Standing & { previousOpponentIds: string[] };
 
+type RankedStanding = {
+  participantId: string;
+  nickname: string;
+  tribe: "comet" | "satellite" | "star";
+  place: number;
+  placeLabel: string;
+  rankScore: number;
+  wins: number;
+  losses: number;
+  score: number;
+  bye: number;
+  buchholz: number;
+  games: number;
+  sortReason: string;
+};
+
 @Injectable()
 export class MatchesStoreService {
   constructor(
@@ -283,21 +299,7 @@ export class MatchesStoreService {
   async getPublicResults(tournamentId: string): Promise<Record<string, unknown>> {
     const touranment = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     const standings = await this.getStandings(tournamentId);
-    const participantsTotal = standings.length;
-    const ranked = standings.map((s, idx) => ({
-      participantId: s.participantId,
-      nickname: s.nickname,
-      tribe: s.tribe,
-      place: idx + 1,
-      rankScore: participantsTotal - idx,
-      wins: s.wins,
-      losses: s.losses,
-      score: s.points,
-      bye: s.byes,
-      buchholz: s.buchholz,
-      games: s.games,
-      sortReason: "points > buchholz > wins > id"
-    }));
+    const ranked = this.rankStandings(standings);
 
     return {
       completed: touranment?.status === TournamentStatus.finished,
@@ -308,13 +310,7 @@ export class MatchesStoreService {
 
   async getPublicTribeStats(tournamentId: string): Promise<Record<string, unknown>> {
     const standings = await this.getStandings(tournamentId);
-    const ranked = standings.map((s, idx) => ({
-      participantId: s.participantId,
-      nickname: s.nickname,
-      tribe: s.tribe,
-      place: idx + 1,
-      score: s.points
-    }));
+    const ranked = this.rankStandings(standings);
     return { items: aggregateTribeStats(ranked) };
   }
 
@@ -451,6 +447,60 @@ export class MatchesStoreService {
       b.wins - a.wins ||
       a.participantId.localeCompare(b.participantId)
     );
+  }
+
+  private rankStandings(standings: Standing[]): RankedStanding[] {
+    const participantsTotal = standings.length;
+    const ranked: RankedStanding[] = [];
+
+    for (let index = 0; index < standings.length;) {
+      const first = standings[index];
+      let groupEnd = index + 1;
+      while (groupEnd < standings.length && this.hasSameResult(first, standings[groupEnd])) {
+        groupEnd += 1;
+      }
+
+      const placeStart = index + 1;
+      const placeEnd = groupEnd;
+      const placeLabel = placeStart === placeEnd ? `${placeStart}` : `${placeStart}-${placeEnd}`;
+      const rankScore = this.averageRankScoreForPlaces(participantsTotal, placeStart, placeEnd);
+
+      for (let groupIndex = index; groupIndex < groupEnd; groupIndex += 1) {
+        const standing = standings[groupIndex];
+        ranked.push({
+          participantId: standing.participantId,
+          nickname: standing.nickname,
+          tribe: standing.tribe,
+          place: placeStart,
+          placeLabel,
+          rankScore,
+          wins: standing.wins,
+          losses: standing.losses,
+          score: standing.points,
+          bye: standing.byes,
+          buchholz: standing.buchholz,
+          games: standing.games,
+          sortReason: "points > buchholz > wins"
+        });
+      }
+
+      index = groupEnd;
+    }
+
+    return ranked;
+  }
+
+  private hasSameResult(a: Standing, b: Standing): boolean {
+    return a.points === b.points && a.buchholz === b.buchholz && a.wins === b.wins;
+  }
+
+  private averageRankScoreForPlaces(participantsTotal: number, placeStart: number, placeEnd: number): number {
+    const count = placeEnd - placeStart + 1;
+    let total = 0;
+    for (let place = placeStart; place <= placeEnd; place += 1) {
+      total += participantsTotal - place + 1;
+    }
+    return Number((total / count).toFixed(2));
   }
 
   private async historyMap(tournamentId: string, tx: Prisma.TransactionClient = this.prisma): Promise<Map<string, Set<string>>> {

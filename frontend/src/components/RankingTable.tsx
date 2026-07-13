@@ -33,7 +33,7 @@ export function RankingTable({ standings, tribeStats }: RankingTableProps): JSX.
             <tbody>
               {standings.map((row, index) => (
                 <tr key={row.participantId} className="border-t border-white/5">
-                  <td className="py-2 text-textMain">{row.place}</td>
+                  <td className="py-2 text-textMain">{row.placeLabel ?? row.place}</td>
                   <td className="py-2">
                     <Link className="text-accent hover:text-accent/80" to={`/participants/${row.participantId}`}>
                       {row.nickname}

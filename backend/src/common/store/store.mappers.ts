@@ -110,7 +110,7 @@ export function groupBracket(rows: MatchWithParticipants[], bracketType: Bracket
 }
 
 export function aggregateTribeStats(
-  standings: Array<{ tribe: TribeCode; score: number; place: number }>
+  standings: Array<{ tribe: TribeCode; score: number; place: number; rankScore?: number }>
 ): Array<{
   tribe: TribeCode;
   participantsCount: number;
@@ -126,7 +126,7 @@ export function aggregateTribeStats(
     const current = grouped.get(row.tribe) ?? { participantsCount: 0, totalScore: 0, totalRankScore: 0, bestPlace: 999 };
     current.participantsCount += 1;
     current.totalScore += row.score;
-    current.totalRankScore += participantsTotal - row.place + 1;
+    current.totalRankScore += row.rankScore ?? participantsTotal - row.place + 1;
     current.bestPlace = Math.min(current.bestPlace, row.place);
     grouped.set(row.tribe, current);
   }
